@@ -1,0 +1,1362 @@
+# Section 8: Documentation
+
+## README.md
+
+# 🚀 Hyperliquid One-Sided Quoting Trading Bot
+
+**Enterprise-grade algorithmic trading system for Hyperliquid rebate farming**
+
+[![TypeScript](https://img.shields.io/badge/TypeScript-4.9+-blue.svg)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+## 🎯 Overview
+
+This is a sophisticated one-sided quoting trading bot designed specifically for Hyperliquid's ultra-low-latency perpetual futures platform. The bot implements a directional liquidity provision strategy that eliminates inventory risk while maximizing maker rebate capture at 0.003% per fill.
+
+### Key Features
+
+✅ **One-Sided Quoting Strategy** - Posts only bids OR asks (never both), eliminating inventory risk  
+✅ **Rebate Optimization** - Targets 0.003% maker rebates with high fill rate optimization  
+✅ **Advanced Signal Generation** - Multi-timeframe momentum, volume analysis, and technical indicators  
+✅ **Enterprise Risk Management** - Multi-layer risk controls with real-time monitoring  
+✅ **Sub-100ms Latency** - Optimized for high-frequency rebate capture  
+✅ **Real-time Dashboard** - Professional monitoring and control interface  
+✅ **Comprehensive Backtesting** - Strategy validation with historical data  
+✅ **Production Infrastructure** - Docker, PM2, monitoring, and alerting  
+
+## 📊 Strategy Overview
+
+### One-Sided Quoting Logic
+```typescript
+if (signal.direction === Direction.LONG) {
+    // ONLY place BUY orders (bids)
+    placeBidOrder(symbol, price, size);
+    cancelAllAskOrders(symbol);
+} else if (signal.direction === Direction.SHORT) {
+    // ONLY place SELL orders (asks)  
+    placeAskOrder(symbol, price, size);
+    cancelAllBidOrders(symbol);
+}
+```
+
+### Rebate Farming Economics
+- **Maker Rebate**: 0.003% per fill on Hyperliquid
+- **Target Volume**: $1M+ daily for meaningful rebate capture
+- **Fill Rate Optimization**: 65-70% of posted quotes should fill
+- **Risk Elimination**: No inventory risk through directional positioning
+
+## 🏗️ Architecture
+
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Market Data   │────│  Signal Generator │────│ Trading Strategy│
+│   (WebSocket)   │    │   (Technical +    │    │  (One-Sided     │
+│                 │    │    Momentum)      │    │   Quoting)      │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+         │                       │                       │
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│  Risk Manager   │────│  Position Manager │────│  Order Manager  │
+│ (Multi-layer    │    │   (P&L Tracking)  │    │ (Execution &    │
+│  Protection)    │    │                   │    │  Monitoring)    │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+         │                       │                       │
+         └───────────────────────┼───────────────────────┘
+                                 │
+                                 ▼
+                    ┌─────────────────┐
+                    │    Dashboard    │
+                    │ (Monitoring &   │
+                    │   Control)      │
+                    └─────────────────┘
+```
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Node.js 18+ 
+- npm 9+
+- Git
+- (Optional) Docker & Docker Compose
+
+### Installation
+
+1. **Clone and Setup**
+```bash
+git clone <repository-url>
+cd hyperliquid-trading-bot
+chmod +x scripts/*.sh
+./scripts/setup.js
+```
+
+2. **Configure Environment**
+```bash
+cp .env.example .env
+# Edit .env with your Hyperliquid API credentials
+```
+
+3. **Start Development Mode**
+```bash
+npm run dev
+```
+
+4. **Access Dashboard**
+```bash
+open http://localhost:3000
+```
+
+### Production Deployment
+
+```bash
+# Deploy with PM2
+./scripts/deploy.sh
+
+# Monitor
+./scripts/monitor.sh
+
+# Health Check
+./scripts/health-check.sh
+```
+
+## ⚙️ Configuration
+
+### Environment Variables (.env)
+
+```bash
+# === TRADING CONFIGURATION ===
+TRADING_MODE=testnet                    # testnet | mainnet
+TRADING_SYMBOLS=ETH,BTC,SOL            # Comma-separated symbols
+MAX_POSITION_SIZE=1000                  # Maximum position size ($)
+BASE_ORDER_SIZE=100                     # Base order size ($)
+CONFIDENCE_THRESHOLD=0.70               # Signal confidence threshold
+TARGET_FILL_RATE=0.65                   # Target quote fill rate
+
+# === RISK MANAGEMENT ===
+MAX_DAILY_LOSS=500                      # Maximum daily loss ($)
+MAX_DRAWDOWN_PERCENT=5                  # Maximum drawdown (%)
+POSITION_TIMEOUT_MINUTES=30             # Auto-flatten timeout
+
+# === HYPERLIQUID API ===
+HYPERLIQUID_API_KEY=your_api_key_here
+HYPERLIQUID_SECRET=your_secret_here
+HYPERLIQUID_WALLET_ADDRESS=your_wallet
+HYPERLIQUID_PRIVATE_KEY=your_private_key
+```
+
+## 📈 Trading Strategy Details
+
+### Signal Generation
+- **Momentum Analysis**: Multi-timeframe price velocity (5m, 15m, 30m)
+- **Volume Profile**: Buy/sell volume imbalance detection
+- **Technical Indicators**: RSI, EMA crossovers, Bollinger Bands
+- **Order Flow**: Aggressive trade detection and flow analysis
+- **Confidence Scoring**: Weighted signal combination with smoothing
+
+### Risk Management
+- **Position Limits**: Maximum size per symbol and total exposure
+- **Drawdown Controls**: Real-time monitoring with automatic stops
+- **Time-based Management**: Position timeout and decay algorithms
+- **Correlation Risk**: Multi-asset exposure monitoring
+- **Emergency Stops**: Automatic trading halt on critical events
+
+### Performance Optimization
+- **Latency**: Sub-100ms quote updates for rebate capture
+- **Fill Rate**: Dynamic pricing for 65-70% fill optimization
+- **Adverse Selection**: Protection against being picked off
+- **Rebate Maximization**: Precise maker order placement
+
+## 🔧 API Reference
+
+### Core Classes
+
+#### `OneSidedQuotingStrategy`
+Main trading strategy implementing one-sided quoting logic.
+
+```typescript
+const strategy = new OneSidedQuotingStrategy(config, client, riskManager, signalGenerator);
+await strategy.start();
+```
+
+#### `SignalGenerator`
+Generates trading signals from market data analysis.
+
+```typescript
+signalGenerator.on('signal', (signal) => {
+  console.log(`${signal.symbol}: ${signal.direction} (${signal.confidence})`);
+});
+```
+
+#### `RiskManager`
+Comprehensive risk management with real-time monitoring.
+
+```typescript
+const canTrade = riskManager.canTrade('ETH');
+const maxSize = riskManager.getMaxPositionSize('ETH', requestedSize);
+```
+
+## 📊 Dashboard Features
+
+Access the real-time dashboard at `http://localhost:3000`
+
+### Main Features
+- **Strategy Controls**: Start/stop trading, emergency controls
+- **Performance Metrics**: P&L, rebates, Sharpe ratio, drawdown
+- **Risk Monitoring**: Real-time risk status and alerts
+- **Live Signals**: Current market signals and confidence levels
+- **Portfolio Overview**: Positions, cash, total value
+- **Equity Curve**: Real-time portfolio value charting
+
+### API Endpoints
+- `GET /api/status` - System and strategy status
+- `GET /api/metrics` - Real-time trading metrics
+- `GET /api/risk` - Risk management data
+- `GET /api/performance` - Performance analysis
+- `POST /api/emergency-stop` - Emergency controls
+- `POST /api/strategy/toggle` - Start/stop strategy
+
+## 🧪 Testing
+
+### Run Test Suite
+```bash
+# All tests
+npm test
+
+# Unit tests only
+npm run test:unit
+
+# Integration tests
+npm run test:integration
+
+# Performance tests
+npm run test:performance
+
+# Test coverage
+npm run test:coverage
+```
+
+### Backtesting
+```bash
+# Run historical backtest
+npm run backtest -- --start=2024-01-01 --end=2024-02-01 --symbol=ETH
+```
+
+## 🔒 Security Considerations
+
+### API Security
+- **Credentials**: Store API keys securely in environment variables
+- **Permissions**: Use read-only keys where possible
+- **Rate Limiting**: Built-in rate limiting to prevent API abuse
+- **Signature Validation**: All requests are cryptographically signed
+
+### System Security
+- **Process Isolation**: Runs in unprivileged containers
+- **Resource Limits**: Memory and CPU constraints
+- **Audit Logging**: Comprehensive audit trail
+- **Emergency Controls**: Multiple layers of emergency stops
+
+## 📊 Performance Metrics
+
+### Expected Performance
+- **Latency**: <100ms quote updates
+- **Fill Rate**: 65-70% of posted quotes
+- **Rebate Capture**: >95% of fills classified as maker
+- **Sharpe Ratio**: Target >2.0 (strategy dependent)
+- **Maximum Drawdown**: <5% with proper risk management
+
+### Monitoring
+- **Real-time Metrics**: Dashboard with live updates
+- **Alerting**: Slack/email notifications for critical events
+- **Logging**: Comprehensive logging with log rotation
+- **Health Checks**: Automated system health monitoring
+
+## 🛠️ Development
+
+### Project Structure
+```
+src/
+├── config/           # Configuration management
+├── core/             # Core trading components
+├── strategies/       # Trading strategies
+├── analytics/        # Performance analytics
+├── monitoring/       # Dashboard and monitoring
+├── utils/            # Utility functions
+├── types/            # TypeScript definitions
+└── api/              # API integrations
+
+tests/
+├── unit/             # Unit tests
+├── integration/      # Integration tests
+└── performance/      # Performance tests
+
+scripts/
+├── setup.js          # Environment setup
+├── deploy.sh         # Production deployment
+├── backup.sh         # Data backup
+└── monitor.sh        # Live monitoring
+```
+
+### Adding New Features
+
+1. **New Signal**: Extend `SignalGenerator` class
+2. **Risk Rule**: Add to `RiskManager` configuration
+3. **Strategy**: Implement `StrategyBase` interface
+4. **Monitoring**: Add endpoints to `Dashboard` class
+
+### Code Style
+```bash
+# Linting
+npm run lint
+
+# Auto-fix
+npm run lint:fix
+
+# Format code
+npm run format
+```
+
+## 🐳 Docker Deployment
+
+### Development
+```bash
+docker-compose up -d
+```
+
+### Production
+```bash
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+### Services
+- **trading-bot**: Main application
+- **redis**: Caching and session management
+- **prometheus**: Metrics collection
+- **grafana**: Advanced analytics dashboard
+- **nginx**: Load balancer and proxy
+
+## 📋 Troubleshooting
+
+### Common Issues
+
+**Connection Errors**
+```bash
+# Check API connectivity
+curl https://api.hyperliquid.xyz/info
+
+# Verify WebSocket
+wscat -c wss://api.hyperliquid.xyz/ws
+```
+
+**Performance Issues**
+```bash
+# Check system resources
+npm run monitor
+
+# Analyze logs
+tail -f logs/trading.log | grep ERROR
+```
+
+**Configuration Problems**
+```bash
+# Validate configuration
+npm run test:config
+
+# Check environment
+npm run verify-setup
+```
+
+### Log Locations
+- **Trading Logs**: `logs/trading/`
+- **System Logs**: `logs/system/`
+- **Error Logs**: `logs/error.log`
+- **Audit Logs**: `logs/audit/`
+
+## 🔧 Production Checklist
+
+Before deploying to production:
+
+- [ ] Update `.env` with mainnet credentials
+- [ ] Configure risk limits appropriately
+- [ ] Test with small position sizes first
+- [ ] Setup monitoring and alerting
+- [ ] Configure backup procedures
+- [ ] Verify emergency stop procedures
+- [ ] Test all dashboard functions
+- [ ] Run comprehensive backtests
+- [ ] Setup log monitoring
+- [ ] Configure auto-restart policies
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open Pull Request
+
+### Development Guidelines
+- Write tests for new features
+- Follow TypeScript best practices
+- Update documentation
+- Use conventional commit messages
+- Ensure backward compatibility
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) file for details.
+
+## ⚠️ Disclaimer
+
+This software is for educational and research purposes. Trading cryptocurrencies involves substantial risk of loss. Past performance is not indicative of future results. Use at your own risk.
+
+## 🔗 Resources
+
+- [Hyperliquid Documentation](https://hyperliquid.gitbook.io/)
+- [TypeScript Handbook](https://www.typescriptlang.org/docs/)
+- [Algorithmic Trading Resources](https://github.com/awesome-algorithmic-trading)
+
+---
+
+## TECHNICAL_OVERVIEW.md
+
+# 🎯 Technical Overview - Hyperliquid One-Sided Quoting Bot
+
+## Strategy Implementation
+
+### Core Strategy: One-Sided Quoting
+Unlike traditional market making that places both bids and asks, this bot implements **directional liquidity provision**:
+
+```typescript
+// Traditional Market Making (NOT this strategy)
+placeBidOrder(symbol, bidPrice, size);    // ❌ NOT USED
+placeAskOrder(symbol, askPrice, size);    // ❌ NOT USED
+
+// One-Sided Quoting (THIS strategy)
+if (signal.direction === LONG) {
+    placeBidOrder(symbol, bidPrice, size);     // ✅ BUY-only periods
+    cancelAllAskOrders(symbol);                // ✅ No ask orders
+} else if (signal.direction === SHORT) {
+    placeAskOrder(symbol, askPrice, size);     // ✅ SELL-only periods  
+    cancelAllBidOrders(symbol);                // ✅ No bid orders
+}
+```
+
+### Benefits of One-Sided Approach
+1. **Eliminates Inventory Risk**: Never accumulates unwanted positions
+2. **Maximizes Rebate Capture**: Optimizes for maker rebate efficiency
+3. **Reduces Adverse Selection**: Only provides liquidity in favorable direction
+4. **Simplifies Risk Management**: Directional bias eliminates hedging complexity
+
+## Signal Generation Engine
+
+### Multi-Factor Signal Analysis
+The bot combines multiple signal sources with confidence weighting:
+
+```typescript
+const signals = [
+    { signal: momentumSignal, weight: 0.30 },     // Price velocity analysis
+    { signal: volumeSignal, weight: 0.25 },      // Buy/sell volume imbalance  
+    { signal: rsiSignal, weight: 0.15 },         // Overbought/oversold
+    { signal: emaSignal, weight: 0.15 },         // Trend following
+    { signal: bollingerSignal, weight: 0.10 },   // Mean reversion
+    { signal: orderFlowSignal, weight: 0.05 },   // Aggressive trade detection
+];
+```
+
+### Signal Confidence Calculation
+```typescript
+// Each signal generates:
+{
+    direction: LONG | SHORT | NEUTRAL,
+    confidence: 0.0 to 1.0,
+    strength: 0.0 to 1.0,
+    reason: "Detailed explanation"
+}
+
+// Combined with weighted scoring:
+finalConfidence = Σ(signal.confidence × signal.strength × weight)
+```
+
+### Technical Indicators
+- **RSI (14)**: Momentum oscillator for overbought/oversold conditions
+- **EMA (20/50)**: Exponential moving averages for trend detection  
+- **Bollinger Bands**: Volatility-based support/resistance
+- **Volume Profile**: Buy/sell pressure analysis
+- **Momentum**: Multi-timeframe price velocity (5m, 15m, 30m)
+
+## Risk Management System
+
+### Multi-Layer Risk Controls
+```typescript
+// Layer 1: Position Limits
+if (positionSize > maxPositionSize) return false;
+
+// Layer 2: Concentration Risk  
+if (symbolExposure > portfolioValue * 0.3) return false;
+
+// Layer 3: Daily Loss Limits
+if (dailyLoss > maxDailyLoss) return false;
+
+// Layer 4: Drawdown Protection
+if (currentDrawdown > maxDrawdownPercent) return false;
+
+// Layer 5: Emergency Circuit Breaker
+if (emergencyStop) return false;
+```
+
+### Risk Metrics Tracking
+- **Value at Risk (VaR)**: Statistical risk measurement
+- **Maximum Drawdown**: Peak-to-trough portfolio decline
+- **Sharpe Ratio**: Risk-adjusted return measurement
+- **Position Concentration**: Single-symbol exposure limits
+- **Correlation Risk**: Multi-asset correlation monitoring
+
+## Performance Optimization
+
+### Latency Optimization
+```typescript
+// WebSocket message processing pipeline:
+Market Data → Signal Processing → Risk Check → Order Placement
+    ↓              ↓                 ↓            ↓
+  <10ms          <50ms             <10ms        <30ms
+                                                ------
+                                               <100ms total
+```
+
+### Fill Rate Optimization
+```typescript
+// Dynamic quote placement for optimal fills:
+const aggressiveness = baseAggressiveness + (signalConfidence * 0.5);
+const quotePrice = referencePrice ± (spread * aggressiveness * 0.5);
+
+// Target: 65-70% fill rate
+// Too aggressive → Market orders (pay fees)
+// Too passive → No fills (no rebates)
+```
+
+### Rebate Maximization
+```typescript
+// Rebate calculation per fill:
+const rebateAmount = fillSize * fillPrice * 0.00003; // 0.003%
+
+// Annual rebate potential:
+// $1M daily volume × 365 days × 0.003% = $10,950/year
+// $10M daily volume × 365 days × 0.003% = $109,500/year
+```
+
+## Technical Architecture
+
+### Event-Driven Design
+```typescript
+// Core event flow:
+WebSocket → MarketData → SignalGenerator → Strategy → RiskManager → OrderManager
+
+// Event handlers:
+signalGenerator.on('signal', strategy.processSignal);
+riskManager.on('riskAlert', strategy.handleRiskAlert);
+orderManager.on('orderFilled', portfolio.updatePosition);
+```
+
+### State Management
+- **In-Memory**: Real-time market data, signals, risk metrics
+- **Persistent**: Trade history, configuration, audit logs
+- **Redis**: Caching, session management, performance metrics
+- **SQLite**: Local database for trade and performance history
+
+### Error Handling & Recovery
+```typescript
+// Comprehensive error handling:
+try {
+    await placeOrder(params);
+} catch (error) {
+    if (error.retryable) {
+        await exponentialBackoff(() => placeOrder(params));
+    } else {
+        logger.error('Non-retryable error', error);
+        await emergencyStop();
+    }
+}
+```
+
+## Database Schema
+
+### Trade History
+```sql
+CREATE TABLE trades (
+    id TEXT PRIMARY KEY,
+    symbol TEXT NOT NULL,
+    side TEXT NOT NULL,
+    size REAL NOT NULL,
+    entry_price REAL NOT NULL,
+    exit_price REAL,
+    pnl REAL DEFAULT 0,
+    fees REAL DEFAULT 0,
+    rebates REAL DEFAULT 0,
+    entry_time INTEGER NOT NULL,
+    exit_time INTEGER,
+    status TEXT DEFAULT 'open'
+);
+```
+
+### Risk Events
+```sql
+CREATE TABLE risk_events (
+    id TEXT PRIMARY KEY,
+    timestamp INTEGER NOT NULL,
+    level TEXT NOT NULL,           -- WARNING | CRITICAL | EMERGENCY
+    type TEXT NOT NULL,            -- DRAWDOWN_LIMIT | DAILY_LOSS | etc.
+    message TEXT NOT NULL,
+    symbol TEXT,
+    value REAL,
+    limit_value REAL,
+    action TEXT
+);
+```
+
+## Deployment Architecture
+
+### Production Stack
+```yaml
+# docker-compose.yml
+services:
+  trading-bot:      # Main application
+  redis:            # Caching layer
+  prometheus:       # Metrics collection
+  grafana:          # Analytics dashboard
+  nginx:            # Load balancer
+```
+
+### Monitoring Stack
+- **Application Metrics**: Custom metrics via Prometheus
+- **System Metrics**: CPU, memory, disk, network
+- **Business Metrics**: P&L, rebates, fill rates, risk metrics
+- **Alert Channels**: Slack, email, webhooks for critical events
+
+### High Availability
+- **Auto-restart**: PM2 process management with automatic restarts
+- **Health Checks**: Continuous health monitoring with failover
+- **Graceful Shutdown**: Proper cleanup of positions and orders
+- **Data Persistence**: All critical data persisted across restarts
+
+## Integration with Hyperliquid
+
+### API Integration
+```typescript
+// REST API for account management
+GET /info?type=clearinghouseState    // Account positions
+GET /info?type=openOrders           // Open orders
+POST /exchange                       // Place/cancel orders
+
+// WebSocket for real-time data
+{
+    method: "subscribe",
+    subscription: {
+        type: "l2Book",              // Order book updates
+        coin: "ETH"
+    }
+}
+```
+
+### Order Types & Execution
+```typescript
+// Limit orders for maker rebates
+const order = {
+    coin: "ETH",
+    is_buy: true,
+    sz: 0.1,                        // Size in base currency
+    limit_px: 2000.50,              // Limit price
+    order_type: { limit: { tif: "Gtc" } },  // Good-till-cancelled
+    reduce_only: false
+};
+```
+
+### Rebate Mechanics
+- **Maker Rebate**: 0.003% paid to liquidity providers
+- **Qualification**: Order must be in book before matching
+- **Settlement**: Rebates credited immediately upon fill
+- **Tracking**: Real-time rebate accounting and reporting
+
+## Performance Benchmarks
+
+### Latency Targets
+- **Market Data Processing**: <10ms per update
+- **Signal Generation**: <50ms for complete analysis
+- **Risk Validation**: <10ms per check
+- **Order Placement**: <30ms end-to-end
+- **Total Pipeline**: <100ms market-data-to-order
+
+### Throughput Capacity
+- **Market Data**: 1000+ updates/second sustained
+- **Signal Processing**: 100+ symbols simultaneously  
+- **Order Management**: 50+ orders/minute per symbol
+- **Risk Calculations**: Real-time on every update
+
+### Resource Requirements
+- **CPU**: 2-4 cores (1 core minimum)
+- **Memory**: 2GB (1GB minimum)  
+- **Storage**: 10GB (for logs and data)
+- **Network**: Low-latency internet connection
+
+## Scalability Considerations
+
+### Horizontal Scaling
+- **Multi-Symbol**: Independent signal generation per symbol
+- **Multi-Strategy**: Plugin architecture for additional strategies
+- **Multi-Exchange**: Extensible to other exchanges
+- **Load Distribution**: Redis-based state sharing
+
+### Vertical Scaling
+- **CPU Optimization**: Vectorized calculations, efficient algorithms
+- **Memory Management**: Circular buffers, garbage collection optimization
+- **I/O Optimization**: Connection pooling, batch operations
+- **Caching**: Multi-level caching for frequently accessed data
+
+---
+
+## API.md
+
+# 📡 API Documentation
+
+## Overview
+The Hyperliquid Trading Bot exposes a comprehensive REST API for monitoring, control, and integration.
+
+**Base URL**: `http://localhost:3000/api`
+
+## Authentication
+Currently, authentication is optional and can be enabled via configuration:
+
+```typescript
+// Enable API authentication
+DASHBOARD_AUTH_ENABLED=true
+DASHBOARD_AUTH_TOKEN=your_secure_token
+
+// Use in requests
+headers: {
+    'Authorization': 'Bearer your_secure_token'
+}
+```
+
+## Endpoints
+
+### System Status
+
+#### GET /api/status
+Get overall system status and health.
+
+**Response:**
+```json
+{
+    "status": "running",
+    "timestamp": 1699123456789,
+    "uptime": 3600,
+    "strategy": {
+        "isRunning": true,
+        "activeOrders": 5
+    },
+    "risk": {
+        "status": "HEALTHY",
+        "emergencyStop": false
+    }
+}
+```
+
+### Trading Metrics
+
+#### GET /api/metrics
+Get real-time trading metrics and performance data.
+
+**Response:**
+```json
+{
+    "timestamp": 1699123456789,
+    "strategy": {
+        "isRunning": true,
+        "activeOrders": 5,
+        "positions": 3,
+        "totalRebates": 12.45,
+        "fillRate": 0.68,
+        "avgFillTime": 2500
+    },
+    "portfolio": {
+        "totalValue": 10500.50,
+        "cash": 8200.30,
+        "unrealizedPnl": 150.25,
+        "realizedPnl": 89.75,
+        "totalRebates": 60.20
+    }
+}
+```
+
+### Risk Management
+
+#### GET /api/risk
+Get comprehensive risk management data.
+
+**Response:**
+```json
+{
+    "metrics": {
+        "totalExposure": 2500.00,
+        "currentDrawdown": 1.2,
+        "dailyPnl": 45.30,
+        "sharpeRatio": 2.1,
+        "winRate": 0.73
+    },
+    "limits": {
+        "maxPositionSize": 1000,
+        "maxDailyLoss": 500,
+        "maxDrawdownPercent": 5
+    },
+    "positions": [
+        {
+            "symbol": "ETH",
+            "side": "buy",
+            "size": 1.5,
+            "entryPrice": 2000.50,
+            "markPrice": 2015.30,
+            "unrealizedPnl": 22.20
+        }
+    ]
+}
+```
+
+### Strategy Control
+
+#### POST /api/strategy/toggle
+Start or stop the trading strategy.
+
+**Request:**
+```json
+{
+    "action": "start" | "stop"
+}
+```
+
+**Response:**
+```json
+{
+    "success": true,
+    "action": "start",
+    "timestamp": 1699123456789
+}
+```
+
+### Emergency Controls
+
+#### POST /api/emergency-stop
+Trigger or reset emergency stop.
+
+**Request:**
+```json
+{
+    "action": "trigger" | "reset"
+}
+```
+
+**Response:**
+```json
+{
+    "success": true,
+    "message": "Emergency stop triggered",
+    "timestamp": 1699123456789
+}
+```
+
+### Performance Analytics
+
+#### GET /api/performance
+Get detailed performance analysis.
+
+**Response:**
+```json
+{
+    "totalTrades": 150,
+    "winningTrades": 110,
+    "winRate": 0.733,
+    "avgWin": 15.50,
+    "avgLoss": -8.20,
+    "profitFactor": 2.1,
+    "sharpeRatio": 1.8,
+    "maxDrawdown": 3.2,
+    "totalReturn": 8.5,
+    "totalRebates": 125.30
+}
+```
+
+---
+
+## DEPLOYMENT.md
+
+# 🚀 Deployment Guide
+
+## Production Deployment Options
+
+### Option 1: PM2 Deployment (Recommended)
+```bash
+# 1. Prepare environment
+./scripts/setup.js
+
+# 2. Configure production settings
+cp .env.example .env
+# Edit .env with production values
+
+# 3. Deploy with PM2
+./scripts/deploy.sh
+
+# 4. Monitor
+pm2 monit
+```
+
+### Option 2: Docker Deployment
+```bash
+# 1. Build images
+docker-compose build
+
+# 2. Start services
+docker-compose up -d
+
+# 3. Check status
+docker-compose ps
+```
+
+### Option 3: Kubernetes Deployment
+```bash
+# 1. Apply configurations
+kubectl apply -f deploy/kubernetes.yaml
+
+# 2. Check deployment
+kubectl get pods -l app=hyperliquid-bot
+```
+
+## Environment Configuration
+
+### Production .env
+```bash
+# Production Trading Settings
+TRADING_MODE=mainnet
+TRADING_SYMBOLS=ETH,BTC,SOL
+MAX_POSITION_SIZE=5000
+BASE_ORDER_SIZE=500
+
+# Production Risk Settings  
+MAX_DAILY_LOSS=2000
+MAX_DRAWDOWN_PERCENT=3
+POSITION_TIMEOUT_MINUTES=15
+
+# Production API Settings
+HYPERLIQUID_API_KEY=prod_api_key
+HYPERLIQUID_SECRET=prod_secret
+HYPERLIQUID_WALLET_ADDRESS=0x...
+```
+
+### Infrastructure Settings
+```bash
+# Resource Allocation
+NODE_ENV=production
+CLUSTER_MODE=true
+WORKER_PROCESSES=2
+
+# Monitoring
+LOG_LEVEL=info
+METRICS_ENABLED=true
+ALERTING_ENABLED=true
+SLACK_WEBHOOK_URL=https://hooks.slack.com/...
+```
+
+## Monitoring Setup
+
+### Prometheus Configuration
+```yaml
+# prometheus.yml
+scrape_configs:
+  - job_name: 'hyperliquid-bot'
+    static_configs:
+      - targets: ['localhost:3001']
+    scrape_interval: 15s
+```
+
+### Grafana Dashboard
+Import the provided dashboard configuration:
+```bash
+# Import dashboard
+curl -X POST \
+  http://admin:admin@localhost:3000/api/dashboards/db \
+  -H 'Content-Type: application/json' \
+  -d @deploy/grafana-dashboard.json
+```
+
+## Security Hardening
+
+### API Security
+```bash
+# Enable authentication
+DASHBOARD_AUTH_ENABLED=true
+DASHBOARD_AUTH_TOKEN=$(openssl rand -hex 32)
+
+# HTTPS configuration (production)
+SSL_CERT_PATH=/path/to/cert.pem
+SSL_KEY_PATH=/path/to/key.pem
+```
+
+### Network Security
+```bash
+# Firewall rules (example for Ubuntu)
+ufw allow 22/tcp                    # SSH
+ufw allow 3000/tcp                  # Dashboard (restrict to VPN)
+ufw deny 3001/tcp                   # Metrics (internal only)
+ufw deny 3002/tcp                   # Health checks (internal only)
+```
+
+### Process Security
+```bash
+# Run as non-root user
+useradd -m -s /bin/bash trading
+chown -R trading:trading /app
+sudo -u trading npm start
+```
+
+## Backup & Recovery
+
+### Automated Backups
+```bash
+# Schedule daily backups
+echo "0 2 * * * /path/to/hyperliquid-bot/scripts/backup.sh" | crontab -
+```
+
+### Recovery Procedure
+```bash
+# 1. Stop services
+pm2 stop all
+
+# 2. Restore from backup
+tar -xzf backup_20241201_020000.tar.gz
+cp -r backup_data/* ./
+
+# 3. Restart services
+pm2 start ecosystem.config.js
+```
+
+---
+
+## CONFIGURATION.md
+
+# ⚙️ Configuration Guide
+
+## Environment Variables
+
+### Trading Configuration
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `TRADING_MODE` | string | `testnet` | Trading mode: `testnet` or `mainnet` |
+| `TRADING_SYMBOLS` | string | `ETH,BTC` | Comma-separated symbols to trade |
+| `MAX_POSITION_SIZE` | number | `1000` | Maximum position size in USD |
+| `BASE_ORDER_SIZE` | number | `100` | Base order size in USD |
+| `CONFIDENCE_THRESHOLD` | number | `0.70` | Minimum signal confidence (0-1) |
+| `TARGET_FILL_RATE` | number | `0.65` | Target fill rate for quotes (0-1) |
+| `AGGRESSIVENESS_FACTOR` | number | `0.5` | Quote aggressiveness (0-1) |
+
+### Risk Management
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `MAX_DAILY_LOSS` | number | `500` | Maximum daily loss in USD |
+| `MAX_DRAWDOWN_PERCENT` | number | `5` | Maximum drawdown percentage |
+| `POSITION_TIMEOUT_MINUTES` | number | `30` | Auto-flatten positions after X minutes |
+| `EMERGENCY_STOP_LOSS_PERCENT` | number | `10` | Emergency stop loss percentage |
+
+### Signal Generation
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `MOMENTUM_PERIODS` | string | `5,15,30` | Momentum calculation periods (minutes) |
+| `VOLUME_THRESHOLD` | number | `1.5` | Volume imbalance threshold |
+| `TECHNICAL_INDICATORS` | string | `RSI,EMA,BOLLINGER` | Technical indicators to use |
+| `SIGNAL_SMOOTHING` | number | `0.3` | Signal smoothing factor (0-1) |
+
+### System Configuration
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `LOG_LEVEL` | string | `info` | Logging level: `debug`, `info`, `warn`, `error` |
+| `DASHBOARD_PORT` | number | `3000` | Dashboard web server port |
+| `METRICS_PORT` | number | `3001` | Metrics server port |
+| `HEALTH_CHECK_PORT` | number | `3002` | Health check endpoint port |
+
+## Advanced Configuration
+
+### Signal Generator Tuning
+```typescript
+// Fine-tune signal generation
+const signalConfig = {
+    momentumPeriods: [3, 7, 15, 30],        // Multiple timeframes
+    volumeThreshold: 1.2,                   // Lower = more sensitive
+    rsiPeriod: 14,                          // RSI calculation period
+    emaPeriods: [12, 26],                   // EMA periods for MACD
+    bollingerPeriod: 20,                    // Bollinger band period
+    bollingerStdDev: 2.0,                   // Standard deviations
+    signalSmoothing: 0.4,                   // Higher = more smoothing
+    minConfidence: 0.65,                    // Minimum trading confidence
+};
+```
+
+### Risk Management Tuning
+```typescript
+// Customize risk parameters
+const riskConfig = {
+    maxPositionSize: 2000,                  // Per-symbol limit
+    maxDailyLoss: 1000,                     // Daily loss limit
+    maxDrawdownPercent: 4,                  // Drawdown threshold
+    positionTimeoutMinutes: 20,             // Hold time limit
+    concentrationLimit: 0.25,               // 25% max per symbol
+    correlationLimit: 0.8,                  // Correlation threshold
+    volatilityThreshold: 15,                // Volatility threshold
+};
+```
+
+---
+
+## TROUBLESHOOTING.md
+
+# 🔧 Troubleshooting Guide
+
+## Common Issues
+
+### Connection Problems
+
+**Issue**: WebSocket connection fails
+```bash
+Error: WebSocket connection failed: ECONNREFUSED
+```
+
+**Solutions**:
+```bash
+# 1. Check Hyperliquid API status
+curl https://api.hyperliquid.xyz/info
+
+# 2. Verify network connectivity
+ping api.hyperliquid.xyz
+
+# 3. Check firewall settings
+ufw status
+
+# 4. Test WebSocket manually
+wscat -c wss://api.hyperliquid.xyz/ws
+```
+
+### Authentication Errors
+
+**Issue**: API authentication failures
+```bash
+Error: Authentication failed: Invalid signature
+```
+
+**Solutions**:
+```bash
+# 1. Verify API credentials
+echo $HYPERLIQUID_API_KEY
+echo $HYPERLIQUID_SECRET
+
+# 2. Check wallet address format
+echo $HYPERLIQUID_WALLET_ADDRESS
+
+# 3. Validate private key
+echo $HYPERLIQUID_PRIVATE_KEY | wc -c  # Should be 64 characters + newline
+```
+
+### Performance Issues
+
+**Issue**: High latency or slow execution
+```bash
+Warning: Quote update latency exceeding 500ms
+```
+
+**Solutions**:
+```bash
+# 1. Check system resources
+npm run monitor
+
+# 2. Optimize configuration
+# Reduce MOMENTUM_PERIODS
+# Increase QUOTE_UPDATE_FREQUENCY
+
+# 3. Check network latency
+ping api.hyperliquid.xyz
+
+# 4. Monitor memory usage
+free -h
+```
+
+### Risk Management Alerts
+
+**Issue**: Frequent risk alerts
+```bash
+Warning: Daily loss limit approached
+```
+
+**Solutions**:
+```bash
+# 1. Review risk parameters
+# Increase MAX_DAILY_LOSS if appropriate
+# Adjust CONFIDENCE_THRESHOLD higher
+
+# 2. Analyze trade performance
+npm run analyze-trades
+
+# 3. Check market conditions
+# High volatility may require parameter adjustment
+```
+
+## Debugging Tools
+
+### Log Analysis
+```bash
+# Real-time trading logs
+tail -f logs/trading.log | jq '.'
+
+# Error analysis
+grep ERROR logs/combined.log | tail -20
+
+# Risk event analysis  
+grep "risk" logs/audit.log | tail -10
+```
+
+### Performance Profiling
+```bash
+# Memory usage
+node --inspect dist/index.js
+# Open chrome://inspect
+
+# CPU profiling
+npm run profile
+
+# Latency measurement
+npm run test:performance
+```
+
+### Database Queries
+```sql
+-- Recent trades
+SELECT * FROM trades ORDER BY entry_time DESC LIMIT 10;
+
+-- Risk events
+SELECT * FROM risk_events WHERE level = 'CRITICAL' ORDER BY timestamp DESC;
+
+-- Performance snapshots
+SELECT * FROM performance_snapshots ORDER BY timestamp DESC LIMIT 5;
+```
+
+## Recovery Procedures
+
+### Emergency Stop Recovery
+```bash
+# 1. Identify cause
+grep "emergency" logs/audit.log
+
+# 2. Fix underlying issue
+# Update configuration
+# Clear problematic positions
+
+# 3. Reset emergency stop
+curl -X POST http://localhost:3000/api/emergency-stop \
+  -H 'Content-Type: application/json' \
+  -d '{"action": "reset"}'
+```
+
+### Data Corruption Recovery
+```bash
+# 1. Stop services
+pm2 stop all
+
+# 2. Restore from backup
+./scripts/restore.sh backup_20241201_020000.tar.gz
+
+# 3. Verify data integrity
+npm run verify-data
+
+# 4. Restart services
+pm2 start ecosystem.config.js
+```
+
+### Configuration Reset
+```bash
+# 1. Backup current config
+cp .env .env.backup
+
+# 2. Reset to defaults
+cp .env.example .env
+
+# 3. Reconfigure step by step
+# Update API credentials
+# Set conservative risk limits
+# Test with small sizes
+```
+
+## Monitoring Commands
+
+### Real-time Monitoring
+```bash
+# System overview
+./scripts/monitor.sh
+
+# Live dashboard
+open http://localhost:3000
+
+# PM2 monitoring
+pm2 monit
+
+# Log streaming
+pm2 logs hyperliquid-bot --lines 50
+```
+
+### Health Checks
+```bash
+# Comprehensive health check
+./scripts/health-check.sh
+
+# API health
+curl http://localhost:3002/health
+
+# Database health
+npm run db-check
+
+# Memory health
+free -h && df -h
+```
+
+## Performance Optimization
+
+### Latency Optimization
+```bash
+# 1. Reduce signal calculation overhead
+MOMENTUM_PERIODS=5,15              # Fewer periods
+TECHNICAL_INDICATORS=RSI,EMA       # Fewer indicators
+
+# 2. Optimize quote frequency
+QUOTE_UPDATE_FREQUENCY=2000        # Less frequent updates
+
+# 3. Network optimization
+# Use VPS near Hyperliquid infrastructure
+# Optimize connection pooling
+```
+
+### Memory Optimization
+```bash
+# 1. Reduce history length
+MAX_HISTORY_LENGTH=500             # Smaller buffers
+
+# 2. Garbage collection
+node --max-old-space-size=2048 dist/index.js
+
+# 3. Log rotation
+pm2 install pm2-logrotate
+```
+
+## Contact & Support
+
+For additional support:
+- Check logs first: `logs/combined.log`
+- Run health check: `./scripts/health-check.sh`
+- Review configuration: `.env` file
+- Test connectivity: `npm run test:connectivity`
+
+---
+
+*End of Documentation Package*
